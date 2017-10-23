@@ -67,11 +67,11 @@ open_jotdown()
 		echo ${FILE}
 		touch ${FILE}
 		echo "---" >> ${FILE}
-		echo "title: \"$(date +%F)\"" >> ${FILE}
+		echo "title: $(date +%F)" >> ${FILE}
 		echo "author: [$PHD_WORKFLOW_AUTHOR]" >> ${FILE}
 		echo "date: $(date +%F)" >> ${FILE}
 		echo "tags: [Entry]" >> ${FILE}
-		echo "..." >> ${FILE}
+		echo "---" >> ${FILE}
 		vim ${FILE}
 	else
 		vim ${FILE}
@@ -81,7 +81,20 @@ open_jotdown()
 
 ## Searching through daily notes
 
+One of the must-have features of this workflow, according to its philosophy, is an easy-to-use but sophisticated search engine that allows us to filter entries by title, authors, dates, tags, and ultimately, content. Tag searching is implemented by the `search_tags.py` Python script which can be executed as follows:
 
+```bash
+python search_tags.py path --tags [tag1 tag2 ... tagn]
+```
+
+where path is a required positional argument that represents the directory of the search and tags is a list of `n` tags separated by a space. This script will search for the specified tags in the `tags` field in each YAML header from each entry. The search script is case-independent (both file and target tags are converted to lowercase). Here is an example:
+
+```
+python search_tags.py entries/ --tags Dataset RGB
+Searching in entries/ for tags ['dataset', 'rgb']...
+entries/2017-10-21.md : ['dataset']
+entries/2017-10-22.md : ['dataset', 'rgb']
+```
 
 ## Converting entries to PDF or TeX
 
