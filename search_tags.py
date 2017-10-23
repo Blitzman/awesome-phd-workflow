@@ -13,14 +13,14 @@ parser.add_argument('--tags', nargs='+')
 args = parser.parse_args()
 
 path = args.path
-tags = args.tags
+tags = [x.lower() for x in args.tags]
 
-print 'Searching in ', path, 'for tags: ', tags
+print 'Searching in {}{}{} for tags {}{}{}...'.format(bc.HEADER, path, bc.ENDC, bc.HEADER, tags, bc.ENDC)
 
 for fname in glob.glob(path + '/*.md'):
 	with io.open(fname, 'r') as f:
 		header = frontmatter.load(f)
-		file_tags = header['tags']
+		file_tags = [x.lower() for x in header['tags']]
 
 		common_tags = []
 		for tag in tags:
