@@ -17,6 +17,7 @@ This is a workflow highly inspired by the Simple Research Journal by Julian Stra
 	4. [Searching Notes](#searching-notes)
 		1. [Search by Tag](#search-by-tag)
 	5. [Converting Notes](#converting-notes)
+5. [Feature Request](#feature-request)
 
 # Features
 
@@ -65,9 +66,10 @@ Before starting to use this workflow, you must create the following directory st
 
 ```
 . `$PHD_WORKFLOW_HOME`
-+-- entries
-+-- papers
-+-- meetings
++-- notes
+|   +-- daily
+|   +-- meetings
+|   +-- papers
 +-- scripts
 |   +-- bcolors.py
 |   +-- search_tags.py
@@ -137,7 +139,7 @@ bibtex:
 Paper note content in Markdown format
 ```
 
-To take paper notes, add an alias `phd_p` in your `~/.bashrc` file which will automatically open a new paper note file in VIM with the required header and structure. That alias will call `open_paper_note()` which will create a new Markdown file for the paper given its file name as argument. The convention is to use the author surname in lower case and the year of the publication to name the file. In case of many occurrences, just add a letter increasing according to alphabetic ordering, e.g., `urtasun2015a`. The paper will be created with a YAML header containing metadata about the title, author, date, and tags for the note and BibTeX information for the paper. Paper notes will be created in `$PHD_WORKFLOW_HOME/notes/paper`.
+To take paper notes, add an alias `phd_p` in the `~/.bashrc` file which will automatically open a new paper note file in VIM with the required header and structure. That alias will call `open_paper_note()` which will create a new Markdown file for the paper given its file name as argument. The convention is to use the author surname in lower case and the year of the publication to name the file. In case of many occurrences, just add a letter increasing according to alphabetic ordering, e.g., `urtasun2015a`. The paper will be created with a YAML header containing metadata about the title, author, date, and tags for the note and BibTeX information for the paper. Paper notes will be created in `$PHD_WORKFLOW_HOME/notes/paper`.
 
 ```bash
 alias phd_p=open_paper_note
@@ -172,6 +174,94 @@ open_paper_note()
 
 ### Meeting Notes
 
+The purpose of a meeting note is to keep track of the agenda of that particular meeting, summarize every discussed item, establish actions for each one of them, and also gather any unsorted thoughts about it. Additionally, we can note down any following meeting related to the item we are taking note of. Each meeting note has a title, which corresponds to the topic of the meeting, one or various authors, the meeting date, a list of attendees, the place where the meeting took place, and also tags for searching. The content of a meeting note is preestablished as a template that must be filled to serve its purpose.
+
+```yaml
+---
+title: Meeting Title Corresponds to its Topic
+author: [First Author, Second Author]
+date: YYYY-MM-DD
+attendees: [First Attendee, Second Attendee]
+place: Disneyland
+tags: [Tag1, Tag2, Tag3]
+---
+
+# Agenda
+
+- Agenda item 1
+- Agenda item 2
+- Agenda item n
+
+## Item 1
+
+### Actions
+
+- [ ] Action 1
+- [ ] Action 2
+
+# Afterthoughts
+
+# Next Meetings
+```
+
+To take meeting notes, add an alias `phd_m` in the `~/.bashrc` file so that a new meeting entry will be automatically created and open using VIM with the required header and content template. The alias will call `open_meeting_note()` which will create a new Markdown file for the meeting given its topic and date as arguments. The convention is to provide the topic in title case and the meeting in YYYY-MM-DD format. The note will be created with a YAML header containing metadata about the title, author, date, attendees, place, and tags. Meeting notes will be created in `$PHD_WORKFLOW_HOME/notes/meeting` and its filename will be [lower_case_title]-YYYY-MM-DD.
+
+```bash
+alias phd_m=open_meeting_note
+
+open_meeting_note()
+{
+	if [ -z "$1" ]; then
+		echo "You must specify a meeting topic"
+	else
+		if [ -z "$2" ]; then
+			echo "You must specify a meeting date"
+		else
+			if [[ ! $2 =~ ^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])$ ]]; then
+				echo "Invalid date format, must be YYYY-MM-DD"
+			else
+				local FILENAME=$1
+				FILENAME=${FILENAME,,}
+				FILENAME=${FILENAME// /_}
+				local FILE="$PHD_WORKFLOW_HOME/notes/meeting/$FILENAME-$2.md"
+
+				if [ ! -f ${FILE} ]; then
+					echo "Creating new meeting note!"
+					echo ${FILE}
+					touch ${FILE}
+					echo "---" >> ${FILE}
+					echo "title: $1" >> ${FILE}
+					echo "author: [$PHD_WORKFLOW_AUTHOR]" >> ${FILE}
+					echo "date: $2" >> ${FILE}
+					echo "tags: [Meeting]" >> ${FILE}
+					echo "---" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "# Agenda" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "- Agenda item 1" >> ${FILE}
+					echo "- Agenda item 2" >> ${FILE}
+					echo "- Agenda item n" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "## Item 1" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "### Actions" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "- [ ] Action 1" >> ${FILE}
+					echo "- [ ] Action 2" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "# Afterthoughts" >> ${FILE}
+					echo "" >> ${FILE}
+					echo "# Nest Meetings" >> ${FILE}
+					vim ${FILE}
+				else
+					vim ${FILE}
+				fi
+			fi
+		fi
+	fi
+}
+```
+
 ### Curated Notes
 
 ## Searching Notes
@@ -201,6 +291,7 @@ To ease the usage, we can add an alias in our `~/.bashrc` file for each kind of 
 ```bash
 alias phd_d_st="python $PHD_WORKFLOW_TAG_SEARCH $PHD_WORKFLOW_HOME/notes/daily/ --tags"
 alias phd_p_st="python $PHD_WORKFLOW_TAG_SEARCH $PHD_WORKFLOW_HOME/notes/paper/ --tags"
+alias phd_m_st="python $PHD_WORKFLOW_TAG_SEARCH $PHD_WORKFLOW_HOME/notes/meeting/ --tags"
 ``` 
 
 In this way, the previous example can be simplified to
@@ -232,3 +323,18 @@ Then we will be able to call `pandoc_convert entry.md pdf` which will generate a
 ```bash
 alias phd_convert=pandoc_convert
 ```
+
+# Feature Request
+
+- [x] Daily Notes
+- [x] Paper notes
+- [x] Meeting Notes
+- [ ] Curated Notes
+- [x] Search by tag
+- [ ] Regex rules for tag search
+- [x] Entries conversion to PDF
+	- [ ] Deposit output in the same folder as input
+	- [ ] Automatically clean up auxiliary files
+- [x] Entries conversion to TeX
+	- [ ] Custom LaTeX template for pandoc
+- [ ] Look for TODOs
