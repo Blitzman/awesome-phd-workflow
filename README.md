@@ -67,6 +67,7 @@ Before starting to use this workflow, you must create the following directory st
 ```
 . `$PHD_WORKFLOW_HOME`
 +-- notes
+|   +-- curated
 |   +-- daily
 |   +-- meetings
 |   +-- papers
@@ -74,6 +75,7 @@ Before starting to use this workflow, you must create the following directory st
 |   +-- bcolors.py
 |   +-- search_tags.py
 +-- README.md
++-- references.bib
 ```
 ## Taking Notes
 
@@ -264,10 +266,62 @@ open_meeting_note()
 
 ### Curated Notes
 
+The purpose of a curated note is to be an structured long-term collection of thoughts, ideas, experiments, results, and insights about a certain aspect of a topic. Ideally, the content from daily, paper, and meeting notes will be filtered, summarized, and validated to end up in a curated note. Eventually, a curated note will build up all the knowledge about that aspect in an organized manner. Curated notes can also be used for any other document which is rigurous enough. The format of a curated note is completely free and its header contains the typical metadata about its title, author, date, topic, and tags.
+
+```yaml
+---
+title: Note Title
+author: [First Author, Second Author]
+date: YYYY-MM-DD
+topic: Note Topic
+tags: [Tag1, Tag2, Tag3]
+---
+
+Curated note content...
+```
+
+To create a curated note add an alias `phd_c` to the `~/.bashrc` file which will automatically open a curated note given a title and a topic. The alias will call `open_curated_note()` which will create the new Markdown file (or open it if it exists) given a note title as first argument and its topic as the second one. The note will be created with a YAML header with the aforementioned metadata in the `$PHD_WORKFLOW_HOME/notes/curated` directory with the filename `[note_topic]-note_title.md`. Note title and note topic should be provided to the function as title case strings per the established convention, they will be converted to snake case as specified to obtain the filename to create or open.
+
+```bash
+open_curated_note()
+{
+	if [ -z "$1" ]; then
+		echo "You must specify a note title!"
+	else
+		if [ -z "$2" ]; then
+			echo "You must specify a note topic!"
+		else
+
+			local FILENAME=[$2]-$1
+			FILENAME=${FILENAME,,}
+			FILENAME=${FILENAME// /_}
+
+			local FILE="$PHD_WORKFLOW_HOME/notes/curated/$FILENAME.md"
+
+			if [ ! -f ${FILE} ]; then
+				echo "Creating new curated note!"
+				echo ${FILE}
+				touch ${FILE}
+				echo "---" >> ${FILE}
+				echo "title: $1" >> ${FILE}
+				echo "author: [$PHD_WORKFLOW_AUTHOR]" >> ${FILE}
+				echo "date: $(date +%F)" >> ${FILE}
+				echo "topic: $2" >> ${FILE}
+				echo "tags: [Curated]" >> ${FILE}
+				echo "---" >> ${FILE}
+				vim ${FILE}
+			else
+				vim ${FILE}
+			fi
+		fi
+	fi
+}
+
+```
+
 ## Searching Notes
 
 One of the must-have features of this workflow, according to its philosophy, is an easy-to-use but sophisticated search engine that allows us to easily filter entries in many different ways.
-
 
 ### Search by Tag
 
@@ -310,15 +364,23 @@ Sometimes it can be useful to convert any entry into a PDF file for sharing, pri
 ```bash
 pandoc_convert()
 {
-	local FILE="$1"
-	echo $FILE
-	local OUTPUT_FILE="${FILE%%.*}.$2"
-	echo $OUTPUT_FILE
-	pandoc -s $FILE -o $OUTPUT_FILE
+	if [ -z "$1" ]; then
+		echo "You must specify an input file!"
+	else
+		if [ -z "$2" ]; then
+			echo "You must specify a file format!"
+		else
+			local FILE="$1"
+			echo $FILE
+			local OUTPUT_FILE="${FILE%%.*}.$2"
+			echo $OUTPUT_FILE
+			pandoc --filter pandoc-citeproc --bibliography=$PHD_WORKFLOW_HOME/references.bib -s $FILE -o $OUTPUT_FILE
+		fi
+	fi
 }
 ```
 
-Then we will be able to call `pandoc_convert entry.md pdf` which will generate a PDF file with the same file name as the entry you provided or `pandoc_convert entry.md tex` to generate a LaTeX source file. For consistency, it is useful to declare another alias for this function
+Then we will be able to call `pandoc_convert entry.md pdf` which will generate a PDF file with the same file name as the entry you provided or `pandoc_convert entry.md tex` to generate a LaTeX source file. The program will use the bibliography database in `$PHD_WORKFLOW_HOME/references.bib` to resolve any citation in the note to convert. For consistency, it is useful to declare another alias for this function
 
 ```bash
 alias phd_convert=pandoc_convert
@@ -329,8 +391,9 @@ alias phd_convert=pandoc_convert
 - [x] Daily Notes
 - [x] Paper notes
 - [x] Meeting Notes
-- [ ] Curated Notes
+- [x] Curated Notes
 - [x] Search by tag
+- [x] Citations in notes
 - [ ] Regex rules for tag search
 - [x] Entries conversion to PDF
 	- [ ] Deposit output in the same folder as input
